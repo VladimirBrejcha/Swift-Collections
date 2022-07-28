@@ -98,9 +98,7 @@ final class QueueTests: XCTestCase {
   // MARK: - Value Type Semantics
 
   func testValueTypeSemantics() throws {
-    var queue1 = Queue<Int>()
-    queue1.enqueue(1)
-    queue1.enqueue(2)
+    var queue1: Queue = [1, 2]
 
     var queue2 = queue1
     queue2.enqueue(3)

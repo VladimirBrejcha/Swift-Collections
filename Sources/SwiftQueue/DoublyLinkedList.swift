@@ -8,11 +8,11 @@ public struct DoublyLinkedList<Element>:
 
   public class Node<Value>: CustomStringConvertible {
 
-    public var value: Value
-    public var next: Node?
-    public weak var previous: Node?
+    var value: Value
+    var next: Node?
+    weak var previous: Node?
 
-    public init(value: Value, next: Node? = nil, previous: Node? = nil) {
+    init(value: Value, next: Node? = nil, previous: Node? = nil) {
       self.value = value
       self.next = next
       self.previous = previous
@@ -37,7 +37,7 @@ public struct DoublyLinkedList<Element>:
   // MARK: - LinkedList
 
   private var head: Node<Element>?
-  private var tail: Node<Element>?
+  private weak var tail: Node<Element>?
 
   public mutating func insert(_ element: Element) {
     copy()
@@ -47,6 +47,9 @@ public struct DoublyLinkedList<Element>:
     if tail == nil {
       tail = head
     }
+    else if tail?.previous == nil {
+      tail?.previous = head
+    }
   }
 
   public mutating func append(_ element: Element) {
@@ -54,8 +57,7 @@ public struct DoublyLinkedList<Element>:
     if head == nil {
       insert(element)
     } else {
-      tail?.next = Node(value: element)
-      tail?.previous = tail
+      tail?.next = Node(value: element, previous: tail)
       tail = tail?.next
     }
   }
@@ -187,25 +189,22 @@ public struct DoublyLinkedList<Element>:
   // MARK: - Value Type Semantics
 
   private mutating func copy() {
-     guard !isKnownUniquelyReferenced(&head) else {
-        return
-     }
+    if isKnownUniquelyReferenced(&head) { return }
 
-     guard var oldHead = head else {
-        return
-     }
+    guard var oldHead = head else { return }
 
-     head = Node(value: oldHead.value)
-     var newHead = head
+    self.head = Node(value: oldHead.value)
 
-     while let nextOldHead = oldHead.next {
-        newHead!.next = Node(value: nextOldHead.value)
-        newHead = newHead!.next
+    var tail = head
 
-        oldHead = nextOldHead
-     }
+    while let oldHeadNext = oldHead.next {
+      tail?.next = Node(value: oldHeadNext.value,
+                        previous: tail)
+      tail = tail?.next
+      oldHead = oldHeadNext
+    }
 
-     tail = newHead
+    self.tail = tail
   }
 }
 

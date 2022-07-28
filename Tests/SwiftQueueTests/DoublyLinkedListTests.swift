@@ -15,56 +15,218 @@ final class DoublyLinkedListTests: XCTestCase {
 
   // MARK: - Logic
 
-  func testInsert() throws {
+  func testEmpty() throws {
+    try checkNodes(expect: [])
+  }
+
+  func testInsertSingle() throws {
     let element = 1
-    let element2 = 5
 
     linkedList.insert(element)
-    linkedList.insert(element2)
 
-    XCTAssertEqual(linkedList.first, element2)
-    XCTAssertEqual(linkedList.last, element)
-    XCTAssertEqual(linkedList.count, 2)
+    try checkNodes(expect: [element])
+  }
+
+  func testInsertSingleWithCopying() throws {
+    let element = 1
+
+    let ref = linkedList
+
+    linkedList.insert(element)
+
+    try checkNodes(expect: [element])
+  }
+
+  func testInsert() throws {
+    let elements = [1, 5, 6]
+
+    elements.reversed().forEach { linkedList.insert($0) }
+
+    try checkNodes(expect: elements)
+  }
+
+  func testInsertWithCopying() throws {
+    let elements = [1, 5, 6, 2, 4]
+
+    linkedList.insert(elements[4])
+    linkedList.insert(elements[3])
+
+    let ref = linkedList
+
+    elements[0..<3].reversed().forEach { linkedList.insert($0) }
+
+    try checkNodes(expect: elements)
+  }
+
+  func testAppendSingle() throws {
+    let element = 1
+
+    linkedList.append(element)
+
+    try checkNodes(expect: [element])
   }
 
   func testAppend() throws {
-    let element = 1
-    let element2 = 5
+    let elements = [1, 2, 5, 7, 3]
 
-    linkedList.append(element)
-    linkedList.append(element2)
+    linkedList.append(elements[0])
+    linkedList.append(elements[1])
 
-    XCTAssertEqual(linkedList.first, element)
-    XCTAssertEqual(linkedList.last, element2)
-    XCTAssertEqual(linkedList.count, 2)
+    let ref = linkedList
+
+    elements[2...].forEach { linkedList.append($0) }
+
+    try checkNodes(expect: elements)
   }
 
-  func testRemoveFirst() throws {
+  func testRemoveSingle() throws {
     let element = 1
     linkedList.insert(element)
 
     let result = linkedList.removeFirst()
-
     XCTAssertEqual(result, element)
-    XCTAssertNil(linkedList.first)
-    XCTAssertTrue(linkedList.isEmpty)
+
+    try checkNodes(expect: [])
+  }
+
+  func testRemoveFirst() throws {
+    var elements = [1, 2, 5]
+    elements.forEach { linkedList.append($0) }
+
+    while linkedList.isEmpty == false {
+      XCTAssertFalse(elements.isEmpty)
+      let result = linkedList.removeFirst()
+      XCTAssertEqual(result, elements.removeFirst())
+    }
+
+    try checkNodes(expect: [])
   }
 
   func testRemoveFirstFromEmpty() throws {
-
     let result = linkedList.removeFirst()
 
     XCTAssertNil(result)
-    XCTAssertTrue(linkedList.isEmpty)
-    XCTAssertNil(linkedList.first)
+    try checkNodes(expect: [])
   }
+
+  private weak var nullifyTestNodeHead: DoublyLinkedList<Int>.Node<Int>?
+  private weak var nullifyTestNodeTail: DoublyLinkedList<Int>.Node<Int>?
 
   func testNullify() throws {
     let elements = Array(repeating: 1, count: 5_000_000)
     elements.forEach { linkedList.insert($0) }
 
+    if case .node(let node) = linkedList.startIndex {
+      nullifyTestNodeHead = node
+    } else {
+      XCTFail()
+    }
+
+    if case .end(let previous) = linkedList.endIndex {
+      nullifyTestNodeTail = previous
+    } else {
+      XCTFail()
+    }
+
+    XCTAssertNotNil(nullifyTestNodeHead)
+    XCTAssertNotNil(nullifyTestNodeTail)
     linkedList = nil
     XCTAssertNil(linkedList)
+    XCTAssertNil(nullifyTestNodeHead)
+    XCTAssertNil(nullifyTestNodeTail)
+  }
+
+  private func checkNodes(list: DoublyLinkedList<Int>, expect elements: [Int]) throws {
+    let count = elements.count
+
+    XCTAssertEqual(list.count, count)
+
+    if count == 0 {
+      XCTAssertTrue(list.isEmpty)
+      XCTAssertNil(list.first)
+      XCTAssertEqual(list.startIndex, list.endIndex)
+      XCTAssertEqual(list.startIndex, .empty)
+      XCTAssertEqual(list.endIndex, .empty)
+      XCTAssertNil(list.last)
+      return
+    }
+
+    if count == 1 {
+
+      XCTAssertEqual(list.first, elements[0])
+      XCTAssertEqual(list.last, elements[0])
+
+      if case .node(let node) = list.startIndex {
+        XCTAssertNil(node.previous)
+        XCTAssertNil(node.next)
+        XCTAssertEqual(node.value, elements[0])
+      } else {
+        XCTFail()
+      }
+
+      if case .end(let last) = list.endIndex {
+        XCTAssertNil(last.next)
+        XCTAssertNil(last.previous)
+        XCTAssertEqual(last.value, elements[0])
+      } else {
+        XCTFail()
+      }
+      return
+    }
+
+    if count > 1 {
+
+      XCTAssertEqual(list.first, elements[0])
+      XCTAssertEqual(list.last, elements.last)
+
+      if case .node(let node) = list.startIndex {
+        XCTAssertNil(node.previous)
+        XCTAssertNotNil(node.next)
+        XCTAssertEqual(node.value, elements[0])
+      } else {
+        XCTFail()
+      }
+
+      if case .end(let last) = list.endIndex {
+        XCTAssertNil(last.next)
+        XCTAssertNotNil(last.previous)
+        XCTAssertEqual(last.value, elements.last)
+      } else {
+        XCTFail()
+      }
+    }
+
+    if count > 2 {
+      var i = list.index(after: list.startIndex)
+
+      for e in elements[1...elements.count - 2] {
+        if case .node(let node) = i {
+          XCTAssertNotNil(node.previous)
+          XCTAssertNotNil(node.next)
+          XCTAssertEqual(node.value, e)
+        } else {
+          XCTFail()
+        }
+        i = list.index(after: i)
+      }
+
+      i = list.index(before: list.endIndex)
+
+      for e in elements[1...elements.count - 2].reversed() {
+        i = list.index(before: i)
+        if case .node(let node) = i {
+          XCTAssertNotNil(node.previous)
+          XCTAssertNotNil(node.next)
+          XCTAssertEqual(node.value, e)
+        } else {
+          XCTFail()
+        }
+      }
+    }
+  }
+
+  private func checkNodes(expect elements: [Int]) throws {
+    try checkNodes(list: linkedList, expect: elements)
   }
 
   // MARK: - Perfomance
@@ -74,6 +236,14 @@ final class DoublyLinkedListTests: XCTestCase {
 
     measure {
       elements.forEach { linkedList.insert($0) }
+    }
+  }
+
+  func testAppendPerfomance() throws {
+    let elements = Array(repeating: 1, count: 5_000_000)
+
+    measure {
+      elements.forEach { linkedList.append($0) }
     }
   }
 
@@ -114,9 +284,7 @@ final class DoublyLinkedListTests: XCTestCase {
   // MARK: - Value-type Semantics
 
   func testValueTypeSemantics() throws {
-    var list1 = DoublyLinkedList<Int>()
-    list1.append(1)
-    list1.append(2)
+    var list1: DoublyLinkedList = [1, 2]
 
     var list2 = list1
     list2.append(3)

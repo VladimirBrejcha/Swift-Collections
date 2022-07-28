@@ -5,7 +5,7 @@ public struct Queue<Element>:
   CustomStringConvertible,
   CustomReflectable
 {
-  private var linkedList: DoublyLinkedList<Element> = .init()
+  private var linkedList: DoublyLinkedList<Element> = []
 
   public mutating func enqueue(_ element: Element) {
     linkedList.append(element)
